@@ -178,6 +178,110 @@
     return match?match[1]:'';
   }
 
+  function videoInfo(url){
+    var raw=String(url||'').trim();
+    if(!raw)return null;
+    try{
+      var parsed=new URL(raw,location.origin);
+      var host=parsed.hostname.toLowerCase().replace(/^www\./,'');
+      var id='';
+
+      if(host==='youtube.com'||host==='m.youtube.com'||host==='youtube-nocookie.com'){
+        if(parsed.pathname==='/watch')id=parsed.searchParams.get('v')||'';
+        else{
+          var ym=parsed.pathname.match(/^\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{6,})/);
+          if(ym)id=ym[1];
+        }
+        if(id)return{kind:'iframe',src:'https://www.youtube-nocookie.com/embed/'+encodeURIComponent(id)+'?rel=0',provider:'YouTube'};
+      }
+
+      if(host==='youtu.be'){
+        id=parsed.pathname.replace(/^\//,'').split('/')[0];
+        if(id)return{kind:'iframe',src:'https://www.youtube-nocookie.com/embed/'+encodeURIComponent(id)+'?rel=0',provider:'YouTube'};
+      }
+
+      if(host==='vimeo.com'||host==='player.vimeo.com'){
+        var vm=parsed.pathname.match(/(?:\/video)?\/(\d+)/);
+        if(vm&&vm[1])return{kind:'iframe',src:'https://player.vimeo.com/video/'+vm[1],provider:'Vimeo'};
+      }
+
+      if(/\.mp4(?:$|[?#])/i.test(parsed.href))return{kind:'video',src:parsed.href,provider:'MP4'};
+    }catch(_){}
+    return null;
+  }
+
+  function videoMarkup(product,context){
+    var info=videoInfo(product.videoUrl);
+    if(!info)return'';
+    var title=product.videoTitle||('Vidéo — '+product.title);
+    var media=info.kind==='iframe'
+      ?'<iframe src="'+esc(info.src)+'" title="'+esc(title)+'" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>'
+      :'<video controls preload="metadata" playsinline><source src="'+esc(info.src)+'" type="video/mp4">Ton navigateur ne peut pas lire cette vidéo.</video>';
+    return '<div class="product-video-frame" data-video-context="'+esc(context||'product')+'">'+media+'</div>'
+      +(product.videoTitle?'<div class="product-video-title">'+esc(product.videoTitle)+'</div>':'');
+  }
+
+  function testimonialMarkup(product){
+    var quote=String(product.testimonialQuote||'').trim();
+    var author=String(product.testimonialAuthor||'').trim();
+    var image=String(product.testimonialImageUrl||'').trim();
+    var mode=String(product.testimonialMode||'').trim();
+    if(['text','image','both'].indexOf(mode)<0){
+      mode=image&&quote?'both':(image?'image':'text');
+    }
+
+    var showText=(mode==='text'||mode==='both')&&quote;
+    var showImage=(mode==='image'||mode==='both')&&image;
+    if(!showText&&!showImage)return'';
+
+    var html='<div class="testimonial'+(showImage?' has-image':'')+'">';
+    if(showText){
+      html+='<blockquote>« '+esc(quote)+' »</blockquote>'+(author?'<cite>— '+esc(author)+'</cite>':'');
+    }
+    if(showImage){
+      html+='<button class="testimonial-image-button" type="button" data-testimonial-image="'+esc(image)+'" aria-label="Agrandir le témoignage">'
+        +'<img src="'+esc(image)+'" alt="Témoignage'+(author?' — '+esc(author):'')+'" loading="lazy">'
+        +'<span>Agrandir</span></button>';
+    }
+    return html+'</div>';
+  }
+
+  function ensureTestimonialLightbox(){
+    var existing=document.getElementById('testimonial-lightbox');
+    if(existing)return existing;
+    var box=document.createElement('div');
+    box.id='testimonial-lightbox';
+    box.className='testimonial-lightbox';
+    box.hidden=true;
+    box.innerHTML='<button class="testimonial-lightbox-close" type="button" aria-label="Fermer">×</button><img src="" alt="Témoignage agrandi">';
+    document.body.appendChild(box);
+
+    function close(){
+      box.classList.remove('is-open');
+      document.body.classList.remove('testimonial-open');
+      window.setTimeout(function(){if(!box.classList.contains('is-open'))box.hidden=true;},180);
+    }
+    box.querySelector('.testimonial-lightbox-close').addEventListener('click',close);
+    box.addEventListener('click',function(event){if(event.target===box)close();});
+    document.addEventListener('keydown',function(event){if(event.key==='Escape'&&box.classList.contains('is-open'))close();});
+    box._close=close;
+    return box;
+  }
+
+  function bindTestimonialLightbox(){
+    var box=ensureTestimonialLightbox();
+    document.querySelectorAll('[data-testimonial-image]').forEach(function(button){
+      button.addEventListener('click',function(){
+        var src=button.getAttribute('data-testimonial-image');
+        var image=box.querySelector('img');
+        image.src=src||'';
+        box.hidden=false;
+        document.body.classList.add('testimonial-open');
+        requestAnimationFrame(function(){box.classList.add('is-open');});
+      });
+    });
+  }
+
   function renderProduct(settings,product){
     setBrand(settings);
 
@@ -187,16 +291,30 @@
 
     var images=[product.imageMain].concat(product.images||[]).filter(Boolean).slice(0,5);
     var secondary=(product.images||[]).filter(Boolean).slice(0,4);
+    var videoPosition=['gallery','description','hidden'].indexOf(product.videoPosition)>=0?product.videoPosition:'gallery';
+    var hasGalleryVideo=!!videoInfo(product.videoUrl)&&videoPosition==='gallery';
+    var initialVideo=!images.length&&hasGalleryVideo;
 
-    var mainMedia=images.length
-      ?'<img id="gallery-main" src="'+esc(images[0])+'" alt="'+esc(product.title)+'">'
-      :'<span class="media-placeholder" aria-hidden="true">'+esc(portal.symbol||portal.name.charAt(0))+'</span>';
+    var mainMedia=initialVideo
+      ?videoMarkup(product,'gallery')
+      :(images.length
+        ?'<img id="gallery-main" src="'+esc(images[0])+'" alt="'+esc(product.title)+'">'
+        :'<span class="media-placeholder" aria-hidden="true">'+esc(portal.symbol||portal.name.charAt(0))+'</span>');
 
-    var thumbs=secondary.length
-      ?'<div class="thumbs">'+secondary.map(function(url,index){
-          return '<button class="thumb" type="button" data-image="'+esc(url)+'" aria-label="Voir l’image secondaire '+(index+1)+'"><img src="'+esc(url)+'" alt=""></button>';
-        }).join('')+'</div>'
-      :'';
+    var thumbs='';
+    if(hasGalleryVideo){
+      var galleryImages=images.slice(0,5);
+      thumbs='<div class="thumbs product-media-thumbs">'
+        +galleryImages.map(function(url,index){
+          return '<button class="thumb media-thumb'+(!initialVideo&&index===0?' active':'')+'" type="button" data-media-image="'+esc(url)+'" aria-label="Voir l’image '+(index+1)+'"><img src="'+esc(url)+'" alt=""></button>';
+        }).join('')
+        +'<button class="thumb media-thumb video-thumb'+(initialVideo?' active':'')+'" type="button" data-media-video="1" aria-label="Voir la vidéo"><span class="video-thumb-icon">▶</span><small>Vidéo</small></button>'
+        +'</div>';
+    }else if(secondary.length){
+      thumbs='<div class="thumbs">'+secondary.map(function(url,index){
+        return '<button class="thumb" type="button" data-image="'+esc(url)+'" aria-label="Voir l’image secondaire '+(index+1)+'"><img src="'+esc(url)+'" alt=""></button>';
+      }).join('')+'</div>';
+    }
 
     var ctaUrl=product.ctaUrl||((product.ctaType==='rendez-vous'||product.ctaType==='appel')?settings.appointmentUrl:'');
     var ctaLabel=(product.ctaType==='rendez-vous'&&settings.appointmentLabel)
@@ -205,22 +323,48 @@
 
     var cta=ctaUrl?'<a class="product-cta" href="'+esc(ctaUrl)+'" target="_blank" rel="noopener">'+esc(ctaLabel)+'</a>':'';
     var promo=product.promoActive?'<div class="promo-box"><strong>'+esc(product.promoText||'Promotion en cours')+'</strong><br><span class="promo-code">'+esc(product.promoCode)+'</span></div>':'';
-    var testimonial=product.testimonialQuote?'<div class="testimonial"><blockquote>« '+esc(product.testimonialQuote)+' »</blockquote>'+(product.testimonialAuthor?'<cite>— '+esc(product.testimonialAuthor)+'</cite>':'')+'</div>':'';
+    var testimonial=testimonialMarkup(product);
+    var descriptionVideo=(videoPosition==='description'&&videoInfo(product.videoUrl))
+      ?'<div class="product-video-block">'+videoMarkup(product,'description')+'</div>'
+      :'';
 
     main.innerHTML='<a class="back-link" href="/univers.html?portail='+encodeURIComponent(portal.id)+'">← Revenir à l’univers '+esc(portal.name)+'</a>'
-      +'<article class="product-layout"><div class="product-gallery"><div class="product-main-image">'+mainMedia+'</div>'+thumbs+'</div>'
+      +'<article class="product-layout"><div class="product-gallery"><div class="product-main-image'+(initialVideo?' video-active':'')+'" id="product-main-media">'+mainMedia+'</div>'+thumbs+'</div>'
       +'<div class="product-copy"><p class="eyebrow">'+esc(TYPE_LABELS[product.type]||product.type||'Découverte')+' · '+esc(portal.name)+'</p><h1>'+esc(product.title)+'</h1>'
       +(product.shortDescription?'<p class="lead">'+esc(product.shortDescription)+'</p>':'')
-      +'<p class="description">'+esc(product.description||'')+'</p><div class="price-row product-price"><span class="price">'+currency(product)+'</span>'+(oldPrice(product)?'<span class="old-price">'+esc(oldPrice(product))+'</span>':'')+'</div>'+promo+cta+testimonial+'</div></article>';
+      +'<p class="description">'+esc(product.description||'')+'</p>'+descriptionVideo+'<div class="price-row product-price"><span class="price">'+currency(product)+'</span>'+(oldPrice(product)?'<span class="old-price">'+esc(oldPrice(product))+'</span>':'')+'</div>'+promo+cta+testimonial+'</div></article>';
 
-    document.querySelectorAll('.thumb').forEach(function(button){
-      button.addEventListener('click',function(){
-        var image=document.getElementById('gallery-main');
-        if(image)image.src=button.getAttribute('data-image');
-        document.querySelectorAll('.thumb').forEach(function(item){item.classList.remove('active');});
-        button.classList.add('active');
+    if(hasGalleryVideo){
+      var mediaBox=document.getElementById('product-main-media');
+      document.querySelectorAll('[data-media-image]').forEach(function(button){
+        button.addEventListener('click',function(){
+          mediaBox.classList.remove('video-active');
+          mediaBox.innerHTML='<img id="gallery-main" src="'+esc(button.getAttribute('data-media-image'))+'" alt="'+esc(product.title)+'">';
+          document.querySelectorAll('.media-thumb').forEach(function(item){item.classList.remove('active');});
+          button.classList.add('active');
+        });
       });
-    });
+      var videoButton=document.querySelector('[data-media-video]');
+      if(videoButton){
+        videoButton.addEventListener('click',function(){
+          mediaBox.classList.add('video-active');
+          mediaBox.innerHTML=videoMarkup(product,'gallery');
+          document.querySelectorAll('.media-thumb').forEach(function(item){item.classList.remove('active');});
+          videoButton.classList.add('active');
+        });
+      }
+    }else{
+      document.querySelectorAll('.thumb').forEach(function(button){
+        button.addEventListener('click',function(){
+          var image=document.getElementById('gallery-main');
+          if(image)image.src=button.getAttribute('data-image');
+          document.querySelectorAll('.thumb').forEach(function(item){item.classList.remove('active');});
+          button.classList.add('active');
+        });
+      });
+    }
+
+    bindTestimonialLightbox();
   }
 
 
