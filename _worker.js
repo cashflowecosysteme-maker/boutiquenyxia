@@ -4,13 +4,13 @@ const SETTINGS_KEY = 'boutique:settings';
 const PORTAL_IDS = ['nyxia', 'diane', 'eric', 'lena', 'selena', 'kael', 'alex'];
 
 const DEFAULT_PORTALS = [
-  { id: 'nyxia', name: 'NyXia', intro: 'Solutions techniques, accompagnement et services Done For You.', imageUrl: '', order: 1, active: true },
-  { id: 'diane', name: 'Diane', intro: 'Parcours, livres et créations de la fondatrice de l’écosystème.', imageUrl: '', order: 2, active: true },
-  { id: 'eric', name: 'Éric', intro: 'Marketing relationnel, communication et univers CashFlow™.', imageUrl: '', order: 3, active: true },
-  { id: 'lena', name: 'Léna', intro: 'Dons, outils spirituels et méthode DDM.', imageUrl: '', order: 4, active: true },
-  { id: 'selena', name: 'Séléna', intro: 'Libération émotionnelle, miroir et méthode A.M.I.E.™.', imageUrl: '', order: 5, active: true },
-  { id: 'kael', name: 'Kael', intro: 'Relations, activités et expériences à vivre à deux.', imageUrl: '', order: 6, active: true },
-  { id: 'alex', name: 'Alex', intro: 'Écriture, livres et parcours pour aller jusqu’au mot FIN.', imageUrl: '', order: 7, active: true }
+  { id: 'nyxia', name: 'NyXia', intro: 'Solutions techniques, accompagnement et services Done For You.', imageUrl: '/images/nyxia.png', order: 1, active: true },
+  { id: 'diane', name: 'Diane', intro: 'Parcours, livres et créations de la fondatrice de l’écosystème.', imageUrl: '/images/diane.png', order: 2, active: true },
+  { id: 'eric', name: 'Éric', intro: 'Marketing relationnel, communication et univers CashFlow™.', imageUrl: '/images/eric.png', order: 3, active: true },
+  { id: 'lena', name: 'Léna', intro: 'Dons, outils spirituels et méthode DDM.', imageUrl: '/images/lena.png', order: 4, active: true },
+  { id: 'selena', name: 'Séléna', intro: 'Libération émotionnelle, miroir et méthode A.M.I.E.™.', imageUrl: '/images/selena.png', order: 5, active: true },
+  { id: 'kael', name: 'Kael', intro: 'Relations, activités et expériences à vivre à deux.', imageUrl: '/images/kael.png', order: 6, active: true },
+  { id: 'alex', name: 'Alex', intro: 'Écriture, livres et parcours pour aller jusqu’au mot FIN.', imageUrl: '/images/alex.png', order: 7, active: true }
 ];
 
 function json(data, status = 200) {
@@ -81,10 +81,10 @@ async function settings(env) {
     return {
       ...defaults,
       ...saved,
-      portals: DEFAULT_PORTALS.map((portal) => ({
-        ...portal,
-        ...(savedPortals.find((item) => item && item.id === portal.id) || {})
-      }))
+      portals: DEFAULT_PORTALS.map((portal) => {
+        const savedPortal = savedPortals.find((item) => item && item.id === portal.id) || {};
+        return { ...portal, ...savedPortal, imageUrl: savedPortal.imageUrl || portal.imageUrl };
+      })
     };
   } catch (_) {
     return defaults;
