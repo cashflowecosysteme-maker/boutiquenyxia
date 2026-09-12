@@ -1097,3 +1097,179 @@ h2{
     font-size:1.85rem;
   }
 }
+
+/* =========================================================
+   FICHE PRODUIT — VIDÉO + TÉMOIGNAGE VISUEL
+   ========================================================= */
+.product-main-image.video-active{
+  aspect-ratio:16/9;
+  overflow:hidden;
+  padding:0;
+  background:rgba(4,7,18,.9);
+}
+.product-video-frame{
+  width:100%;
+  aspect-ratio:16/9;
+  overflow:hidden;
+  border:1px solid rgba(167,139,250,.2);
+  border-radius:18px;
+  background:#03050d;
+  box-shadow:0 16px 45px rgba(0,0,0,.28),0 0 28px rgba(123,92,255,.10);
+}
+.product-main-image.video-active .product-video-frame{
+  height:100%;
+  border:0;
+  border-radius:inherit;
+  box-shadow:none;
+}
+.product-video-frame iframe,
+.product-video-frame video{
+  display:block;
+  width:100%;
+  height:100%;
+  border:0;
+  background:#000;
+}
+.product-video-title{
+  margin-top:9px;
+  color:var(--muted);
+  font-size:.82rem;
+  text-align:center;
+}
+.product-main-image.video-active .product-video-title{
+  display:none;
+}
+.product-video-block{
+  margin:20px 0 5px;
+}
+.product-video-block .product-video-title{
+  text-align:left;
+}
+.product-media-thumbs{
+  grid-template-columns:repeat(auto-fit,minmax(64px,1fr));
+}
+.video-thumb{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  color:#fff;
+  background:linear-gradient(145deg,rgba(123,92,255,.22),rgba(6,10,24,.88));
+}
+.video-thumb-icon{
+  display:grid;
+  place-items:center;
+  width:31px;
+  height:31px;
+  padding-left:2px;
+  border:1px solid rgba(243,204,122,.46);
+  border-radius:50%;
+  color:var(--gold);
+  box-shadow:0 0 20px rgba(123,92,255,.24);
+  font-size:.78rem;
+}
+.video-thumb small{
+  color:var(--lavender);
+  font-size:.65rem;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+
+.testimonial.has-image{
+  margin-top:22px;
+  padding:18px;
+  border-left:0;
+  border:1px solid rgba(167,139,250,.22);
+  border-radius:18px;
+}
+.testimonial-image-button{
+  position:relative;
+  display:block;
+  width:100%;
+  margin-top:14px;
+  padding:0;
+  overflow:hidden;
+  border:1px solid rgba(167,139,250,.2);
+  border-radius:14px;
+  background:rgba(6,10,24,.5);
+  cursor:zoom-in;
+  box-shadow:0 14px 36px rgba(0,0,0,.22);
+}
+.testimonial:not(:has(blockquote)) .testimonial-image-button{
+  margin-top:0;
+}
+.testimonial-image-button img{
+  display:block;
+  width:100%;
+  max-height:480px;
+  object-fit:contain;
+  background:rgba(3,5,13,.72);
+}
+.testimonial-image-button span{
+  position:absolute;
+  right:10px;
+  bottom:10px;
+  padding:6px 10px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:999px;
+  background:rgba(6,10,24,.78);
+  color:#fff;
+  font-size:.68rem;
+  font-weight:800;
+  backdrop-filter:blur(12px);
+}
+.testimonial-image-button:hover{
+  border-color:rgba(243,204,122,.42);
+  box-shadow:0 16px 44px rgba(0,0,0,.26),0 0 25px rgba(123,92,255,.12);
+}
+body.testimonial-open{overflow:hidden}
+.testimonial-lightbox{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:grid;
+  place-items:center;
+  padding:34px;
+  background:rgba(2,4,12,.88);
+  backdrop-filter:blur(14px);
+  opacity:0;
+  transition:opacity .18s ease;
+}
+.testimonial-lightbox[hidden]{display:none}
+.testimonial-lightbox.is-open{opacity:1}
+.testimonial-lightbox img{
+  display:block;
+  max-width:min(1100px,94vw);
+  max-height:88vh;
+  width:auto;
+  height:auto;
+  border:1px solid rgba(167,139,250,.28);
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 28px 90px rgba(0,0,0,.58),0 0 45px rgba(123,92,255,.16);
+}
+.testimonial-lightbox-close{
+  position:fixed;
+  top:18px;
+  right:20px;
+  display:grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  border:1px solid rgba(255,255,255,.22);
+  border-radius:50%;
+  background:rgba(14,18,42,.82);
+  color:#fff;
+  cursor:pointer;
+  font-size:1.8rem;
+  line-height:1;
+}
+@media(max-width:650px){
+  .product-video-block{margin-top:16px}
+  .product-media-thumbs{grid-template-columns:repeat(3,1fr)}
+  .testimonial.has-image{padding:12px}
+  .testimonial-image-button img{max-height:420px}
+  .testimonial-lightbox{padding:20px 10px}
+  .testimonial-lightbox-close{top:10px;right:10px}
+}
