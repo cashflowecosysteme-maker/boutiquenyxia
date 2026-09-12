@@ -23,10 +23,17 @@
     autre:'Découverte'
   };
 
+  /*
+   * Ton relationnel NyXia :
+   * - l'ancien choix "acheter" sert maintenant de mode automatique sur les CARTES
+   * - avec prix => En savoir plus
+   * - sans prix => GRATUIT
+   * - "appel" est présenté comme Réservation consultation
+   */
   var CTA_LABELS={
-    acheter:'Acheter',
+    acheter:'En savoir plus',
     'rendez-vous':'Prendre un rendez-vous',
-    appel:'Prendre un appel',
+    appel:'Réservation consultation',
     'en-savoir-plus':'En savoir plus'
   };
 
@@ -107,29 +114,72 @@
     return '/produit.html?id='+encodeURIComponent(product.id);
   }
 
-
   function portalFrom(settings,id){
     var saved=((settings&&settings.portals)||[]).find(function(item){return item.id===id;})||{};
     return Object.assign({},PORTAL_FALLBACK[id]||{id:id,name:id,intro:'',symbol:'✦'},saved);
   }
 
+  function hasRealPrice(product){
+    if(product.priceLabel)return true;
+    if(product.price==null||product.price==='')return false;
+    var value=Number(product.price);
+    return Number.isFinite(value)&&value>0;
+  }
+
   function currency(product){
     if(product.priceLabel)return esc(product.priceLabel);
-    if(product.price==null||product.price==='')return 'Prix sur la fiche';
+    if(product.price==null||product.price==='')return '';
+    var value=Number(product.price);
+    if(!Number.isFinite(value)||value<=0)return '';
     try{
-      return Number(product.price).toLocaleString('fr-CA',{style:'currency',currency:product.currency||'CAD'});
+      return value.toLocaleString('fr-CA',{style:'currency',currency:product.currency||'CAD'});
     }catch(_){
-      return Number(product.price).toFixed(2)+' $';
+      return value.toFixed(2)+' $';
     }
   }
 
   function oldPrice(product){
     if(product.oldPrice==null||product.oldPrice==='')return '';
+    var value=Number(product.oldPrice);
+    if(!Number.isFinite(value)||value<=0)return '';
     try{
-      return Number(product.oldPrice).toLocaleString('fr-CA',{style:'currency',currency:product.currency||'CAD'});
+      return value.toLocaleString('fr-CA',{style:'currency',currency:product.currency||'CAD'});
     }catch(_){
-      return Number(product.oldPrice).toFixed(2)+' $';
+      return value.toFixed(2)+' $';
     }
+  }
+
+  function cardAction(product,settings){
+    var type=String(product.ctaType||'acheter');
+
+    /*
+     * L'ancien "acheter" est notre mode AUTO sur les cartes.
+     * Il ne s'affiche jamais comme mot de vente.
+     */
+    if(type==='acheter'){
+      type=hasRealPrice(product)?'en-savoir-plus':'gratuit';
+    }
+
+    if(type==='appel')type='reservation-consultation';
+
+    var label='En savoir plus';
+    if(type==='gratuit')label='GRATUIT';
+    else if(type==='rendez-vous')label='Prendre un rendez-vous';
+    else if(type==='reservation-consultation')label='Réservation consultation';
+    else if(type==='en-savoir-plus')label='En savoir plus';
+
+    var url=productUrl(product);
+    var external=false;
+
+    if(type==='rendez-vous'||type==='reservation-consultation'){
+      url=String(product.ctaUrl||settings.appointmentUrl||productUrl(product)).trim();
+      external=/^https:\/\//i.test(url);
+    }else if(type==='gratuit'&&String(product.ctaUrl||'').trim()){
+      url=String(product.ctaUrl).trim();
+      external=/^https:\/\//i.test(url);
+    }
+
+    return{type:type,label:label,url:url,external:external};
   }
 
   function cardMedia(product,portal){
@@ -140,14 +190,28 @@
   function productCard(product,settings){
     var portal=portalFrom(settings,product.portal);
     var description=String(product.shortDescription||product.description||'').slice(0,150);
+    var priceText=currency(product);
+    var previousPrice=oldPrice(product);
+    var priceBlock=priceText
+      ?'<div class="price-row"><span class="price">'+priceText+'</span>'+(previousPrice?'<span class="old-price">'+esc(previousPrice)+'</span>':'')+'</div>'
+      :'';
+
+    var action=cardAction(product,settings);
+    var actionAttrs=action.external?' target="_blank" rel="noopener"':'';
+    var actionMarkup='<a href="'+esc(action.url)+'"'+actionAttrs+' style="color:inherit;text-decoration:none;font-weight:800">'+esc(action.label)+'</a>';
+
     return '<article class="product-card">'
       +(product.featured?'<span class="featured-badge">Vedette</span>':'')
       +(product.promoActive?'<span class="promo-badge">Code '+esc(product.promoCode)+'</span>':'')
       +'<div class="card-media">'+cardMedia(product,portal)+'</div>'
       +'<div class="card-body"><div class="card-type"><span>'+esc(TYPE_LABELS[product.type]||product.type||'Découverte')+'</span><span>'+esc(portal.name)+'</span></div>'
       +'<h3>'+esc(product.title)+'</h3><p class="card-description">'+esc(description)+(description.length>=150?'…':'')+'</p>'
-      +'<div class="price-row"><span class="price">'+currency(product)+'</span>'+(oldPrice(product)?'<span class="old-price">'+esc(oldPrice(product))+'</span>':'')+'</div>'
-      +'<a class="card-link" href="'+productUrl(product)+'">Voir la fiche</a></div></article>';
+      +priceBlock
+      +'<div class="card-link" style="gap:10px;align-items:center;flex-wrap:wrap">'
+      +'<a href="'+productUrl(product)+'" style="color:inherit;text-decoration:none;font-weight:800">Voir la fiche</a>'
+      +'<span aria-hidden="true" style="opacity:.45">|</span>'
+      +actionMarkup
+      +'</div></div></article>';
   }
 
   function setBrand(settings){
@@ -211,7 +275,7 @@
     var mark=document.getElementById('universe-mark');
     mark.innerHTML=portal.imageUrl?'<img src="'+esc(portal.imageUrl)+'" alt="'+esc(portal.name)+'">':esc(portal.symbol||portal.name.charAt(0));
 
-    hero.insertAdjacentHTML('afterend','<section class="catalog-section"><div class="catalog-toolbar"><div><p class="eyebrow">La collection</p><h2>Découvrir les offres</h2></div><label class="search">Rechercher<input type="search" id="catalog-search" placeholder="Titre, catégorie ou type…"></label></div><div class="products-grid" id="universe-products"></div></section>');
+    hero.insertAdjacentHTML('afterend','<section class="catalog-section"><div class="catalog-toolbar"><div><p class="eyebrow">La collection</p><h2>Découvrir les propositions</h2></div><label class="search">Rechercher<input type="search" id="catalog-search" placeholder="Titre, catégorie ou type…"></label></div><div class="products-grid" id="universe-products"></div></section>');
 
     var all=products||[];
     var grid=document.getElementById('universe-products');
@@ -224,7 +288,7 @@
       });
       grid.innerHTML=list.length
         ?list.map(function(product){return productCard(product,settings);}).join('')
-        :'<div class="empty-state">Aucune offre ne correspond à cette recherche.</div>';
+        :'<div class="empty-state">Aucune proposition ne correspond à cette recherche.</div>';
     }
 
     search.addEventListener('input',draw);
@@ -382,7 +446,7 @@
       :(product.ctaUrl||((product.ctaType==='rendez-vous'||product.ctaType==='appel')?settings.appointmentUrl:''));
     var ctaUrl=isSystemeCheckout?checkoutUrl(ctaRaw,product.id):ctaRaw;
     var ctaLabel=isSystemeCheckout
-      ?(CTA_LABELS.acheter||'Acheter')
+      ?'Continuer'
       :((product.ctaType==='rendez-vous'&&settings.appointmentLabel)
         ?settings.appointmentLabel
         :(CTA_LABELS[product.ctaType]||'En savoir plus'));
@@ -394,11 +458,17 @@
       ?'<div class="product-video-block">'+videoMarkup(product,'description')+'</div>'
       :'';
 
+    var productPriceText=currency(product);
+    var productOldPrice=oldPrice(product);
+    var productPriceBlock=productPriceText
+      ?'<div class="price-row product-price"><span class="price">'+productPriceText+'</span>'+(productOldPrice?'<span class="old-price">'+esc(productOldPrice)+'</span>':'')+'</div>'
+      :'';
+
     main.innerHTML='<a class="back-link" href="/univers.html?portail='+encodeURIComponent(portal.id)+'">← Revenir à l’univers '+esc(portal.name)+'</a>'
       +'<article class="product-layout"><div class="product-gallery"><div class="product-main-image'+(initialVideo?' video-active':'')+'" id="product-main-media">'+mainMedia+'</div>'+thumbs+'</div>'
       +'<div class="product-copy"><p class="eyebrow">'+esc(TYPE_LABELS[product.type]||product.type||'Découverte')+' · '+esc(portal.name)+'</p><h1>'+esc(product.title)+'</h1>'
       +(product.shortDescription?'<p class="lead">'+esc(product.shortDescription)+'</p>':'')
-      +'<p class="description">'+esc(product.description||'')+'</p>'+descriptionVideo+'<div class="price-row product-price"><span class="price">'+currency(product)+'</span>'+(oldPrice(product)?'<span class="old-price">'+esc(oldPrice(product))+'</span>':'')+'</div>'+promo+cta+testimonial+'</div></article>';
+      +'<p class="description">'+esc(product.description||'')+'</p>'+descriptionVideo+productPriceBlock+promo+cta+testimonial+'</div></article>';
 
     if(hasGalleryVideo){
       var mediaBox=document.getElementById('product-main-media');
@@ -435,7 +505,6 @@
       link.addEventListener('click',function(){recordRefClick(link.getAttribute('data-nyxia-checkout'));});
     });
   }
-
 
   /* =========================================================
      MENU BURGER NYXIA
