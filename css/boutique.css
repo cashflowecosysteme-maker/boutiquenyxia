@@ -863,3 +863,237 @@ footer span{color:var(--lavender);font-weight:800}
 @media(prefers-reduced-motion:reduce){
   *{scroll-behavior:auto!important;transition:none!important}
 }
+
+
+/* =========================================================
+   CORRECTION IDENTITÉ NYXIA — HEADER SOBRE & TDAH FRIENDLY
+   ========================================================= */
+
+/* La barre du haut reprend la logique visuelle des autres portails :
+   NyXia elle-même, pas un gros bouton/favIcon mauve. */
+.site-header{
+  min-height:58px;
+  padding-top:8px;
+  padding-bottom:8px;
+  background:rgba(6,10,24,.78);
+  border-bottom:1px solid rgba(123,92,255,.10);
+}
+
+.brand{
+  gap:9px;
+  font-size:.98rem;
+  font-weight:700;
+  letter-spacing:0;
+}
+
+.brand-nyxia{
+  display:block;
+  width:34px;
+  height:34px;
+  flex:0 0 34px;
+  object-fit:cover;
+  object-position:center 18%;
+  border-radius:50%;
+  border:1px solid rgba(123,92,255,.24);
+  background:transparent;
+  box-shadow:
+    0 0 10px rgba(123,92,255,.14),
+    0 0 22px rgba(123,92,255,.08);
+}
+
+.brand-orb{
+  display:none!important;
+}
+
+/* Le burger devient discret, pas un gros bouton mauve */
+.burger-button{
+  min-height:38px;
+  padding:7px 10px;
+  border-color:rgba(167,139,250,.14);
+  background:rgba(255,255,255,.025);
+  box-shadow:none;
+  backdrop-filter:blur(12px);
+}
+.burger-button:hover{
+  transform:none;
+  border-color:rgba(167,139,250,.30);
+  background:rgba(123,92,255,.055);
+  box-shadow:none;
+}
+.burger-label{
+  font-size:.69rem;
+  font-weight:700;
+  color:var(--dim);
+}
+.burger-lines{
+  width:18px;
+}
+.burger-lines span{
+  height:1.5px;
+  background:linear-gradient(90deg,#fff,var(--lavender));
+  box-shadow:none;
+}
+
+/* Menu latéral : NyXia remplace le favicon décoratif */
+.menu-orb{
+  display:none!important;
+}
+.menu-nyxia{
+  display:block;
+  width:40px;
+  height:40px;
+  flex:0 0 40px;
+  object-fit:cover;
+  object-position:center 18%;
+  border-radius:50%;
+  border:1px solid rgba(123,92,255,.22);
+  box-shadow:0 0 18px rgba(123,92,255,.12);
+}
+
+/* =========================================================
+   TYPOGRAPHIE — PLUS CALME, PLUS TDAH-FRIENDLY
+   ========================================================= */
+
+/* Le titre principal n'écrase plus NyXia ni le reste de la page */
+h1{
+  max-width:680px;
+  margin-bottom:16px;
+  font-size:clamp(2.05rem,4.2vw,3.55rem);
+  line-height:1.04;
+  letter-spacing:-.025em;
+}
+
+/* Titres de sections nettement plus contenus */
+h2{
+  margin-bottom:11px;
+  font-size:clamp(1.65rem,2.8vw,2.35rem);
+  line-height:1.08;
+}
+
+/* Titres des portes plus calmes */
+.door-card h3{
+  font-size:1.45rem;
+  line-height:1.08;
+}
+
+/* Titre d'une fiche produit */
+.product-copy h1{
+  font-size:clamp(2rem,3.8vw,3.05rem);
+  margin-bottom:14px;
+}
+
+/* Texte d'intro un peu plus compact */
+.lead{
+  font-size:clamp(.98rem,1.55vw,1.12rem);
+  line-height:1.55;
+}
+
+/* L'eyebrow reste une respiration visuelle et non un autre gros titre */
+.eyebrow{
+  font-size:.68rem;
+  letter-spacing:.13em;
+}
+
+/* Réduit la hauteur du hero : moins de "mur" avant les portes */
+.hero{
+  min-height:500px;
+  padding-block:58px 40px;
+  gap:38px;
+}
+
+/* Les sections respirent sans devenir interminables */
+.portal-section,
+.featured-section{
+  padding-block:52px;
+}
+
+.section-heading{
+  margin-bottom:24px;
+}
+
+/* Le titre d'univers hérite de la nouvelle échelle sans gonfler */
+.universe-hero h1{
+  margin:8px 0 12px;
+}
+
+/* Le menu latéral est plus sobre */
+.menu-brand strong{
+  font-size:1rem;
+}
+.menu-section-title{
+  font-size:.64rem;
+}
+.menu-nav>a strong{
+  font-size:.88rem;
+}
+.menu-nav>a small{
+  font-size:.68rem;
+}
+
+/* =========================================================
+   TABLETTE / MOBILE
+   ========================================================= */
+@media(max-width:980px){
+  h1{
+    font-size:clamp(2rem,5.8vw,3.05rem);
+  }
+  h2{
+    font-size:clamp(1.55rem,4vw,2.15rem);
+  }
+  .hero{
+    padding-block:46px 30px;
+  }
+}
+
+@media(max-width:650px){
+  .site-header{
+    min-height:54px;
+  }
+  .brand{
+    font-size:.9rem;
+  }
+  .brand-nyxia{
+    width:30px;
+    height:30px;
+    flex-basis:30px;
+  }
+  h1{
+    font-size:clamp(1.85rem,8.2vw,2.5rem);
+    line-height:1.06;
+  }
+  h2{
+    font-size:clamp(1.45rem,6.2vw,1.95rem);
+  }
+  .door-card h3{
+    font-size:1.35rem;
+  }
+  .lead{
+    font-size:.98rem;
+  }
+  .hero{
+    padding-block:38px 26px;
+    gap:24px;
+  }
+  .portal-section,
+  .featured-section{
+    padding-block:42px;
+  }
+  .product-copy h1{
+    font-size:2rem;
+  }
+}
+
+@media(max-width:420px){
+  .brand{
+    font-size:.86rem;
+  }
+  h1{
+    font-size:1.92rem;
+  }
+  h2{
+    font-size:1.55rem;
+  }
+  .product-copy h1{
+    font-size:1.85rem;
+  }
+}
