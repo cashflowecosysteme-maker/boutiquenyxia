@@ -1,0 +1,14 @@
+name = "boutique-nyxia"
+main = "_worker.js"
+compatibility_date = "2026-07-01"
+
+[assets]
+directory = "."
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "CASHFLOW_KV"
+id = "106db6da016d49d2b480452f19bad695"
+
+[vars]
+SITE_URL = "https://boutique.nyxia.top"

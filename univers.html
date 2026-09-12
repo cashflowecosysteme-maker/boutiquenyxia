@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Explore un univers de la Boutique NyXia.">
+  <title>Univers · Boutique NyXia</title>
+  <link rel="stylesheet" href="/css/boutique.css">
+</head>
+<body data-page="universe">
+  <canvas id="starry-canvas" aria-hidden="true"></canvas>
+  <header class="site-header">
+    <a class="brand" href="/"><span class="brand-orb">N</span><span id="brand-title">Boutique NyXia</span></a>
+    <a class="header-link" href="/">Toutes les portes</a>
+  </header>
+  <main class="shell">
+    <section class="universe-hero">
+      <a class="back-link" href="/">← Revenir au Grand Hall</a>
+      <div class="universe-mark" id="universe-mark">✦</div>
+      <p class="eyebrow">Univers</p>
+      <h1 id="universe-title">Chargement…</h1>
+      <p class="lead" id="universe-intro"></p>
+    </section>
+    <section class="catalog-section">
+      <div class="catalog-toolbar">
+        <div><p class="eyebrow">La collection</p><h2>Découvre ce qui est offert</h2></div>
+        <label class="search"><span>Rechercher</span><input type="search" id="catalog-search" placeholder="Titre, catégorie, besoin…"></label>
+      </div>
+      <div class="products-grid" id="products-grid" aria-live="polite"><div class="loading">Chargement de la boutique…</div></div>
+    </section>
+  </main>
+  <footer><span>NyXia</span> · Une boutique, sept univers.</footer>
+  <script src="/js/starry-bg.js" defer></script>
+  <script src="/js/boutique.js" defer></script>
+</body>
+</html>
