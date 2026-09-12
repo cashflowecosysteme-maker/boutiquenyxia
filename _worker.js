@@ -2,6 +2,7 @@ const PRODUCT_PREFIX = 'boutique:product:';
 const INDEX_KEY = 'boutique:products:index';
 const SETTINGS_KEY = 'boutique:settings';
 const PORTAL_IDS = ['nyxia', 'diane', 'eric', 'lena', 'selena', 'kael', 'alex'];
+const ADMIN_ORIGINS = new Set(['https://univers.nyxia.top', 'https://boutique.nyxia.top']);
 
 const DEFAULT_PORTALS = [
   { id: 'nyxia', name: 'NyXia', intro: 'Solutions techniques, accompagnement et services Done For You.', imageUrl: '/images/nyxia.png', order: 1, active: true },
@@ -29,13 +30,110 @@ function withPublicHeaders(response) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
+function withAdminHeaders(response, request) {
+  const headers = new Headers(response.headers);
+  const origin = request.headers.get('Origin') || '';
+  if (ADMIN_ORIGINS.has(origin)) headers.set('Access-Control-Allow-Origin', origin);
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, X-Univers-Token');
+  headers.set('Vary', 'Origin');
+  headers.set('Cache-Control', 'no-store');
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+function adminJson(data, status, request) {
+  return withAdminHeaders(new Response(JSON.stringify(data), {
+    status: status || 200,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+  }), request);
+}
+
 function withAssetHeaders(response) {
   const headers = new Headers(response.headers);
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action https:");
+  headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; media-src 'self' https: blob:; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com; frame-ancestors 'none'; base-uri 'self'; form-action https:");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+function cleanId(value) {
+  return String(value || '').trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 100);
+}
+
+function cleanText(value, max) {
+  return String(value == null ? '' : value).trim().slice(0, max || 5000);
+}
+
+function cleanMediaUrl(value) {
+  const raw = cleanText(value, 2000);
+  if (!raw) return '';
+  if (raw.startsWith('/')) return raw;
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === 'https:' ? parsed.toString() : '';
+  } catch (_) {
+    return '';
+  }
+}
+
+async function requireUniversAdmin(request, env) {
+  const token = cleanText(request.headers.get('X-Univers-Token'), 300);
+  if (!token) return false;
+  return !!(await env.CASHFLOW_KV.get('univers:session:' + token));
+}
+
+function mediaFields(product) {
+  const p = product || {};
+  return {
+    videoUrl: p.videoUrl || '',
+    videoTitle: p.videoTitle || '',
+    videoPosition: ['gallery', 'description', 'hidden'].includes(p.videoPosition) ? p.videoPosition : 'gallery',
+    testimonialImageUrl: p.testimonialImageUrl || '',
+    testimonialMode: ['text', 'image', 'both'].includes(p.testimonialMode) ? p.testimonialMode : (p.testimonialImageUrl && p.testimonialQuote ? 'both' : (p.testimonialImageUrl ? 'image' : 'text'))
+  };
+}
+
+async function adminProductMedia(request, env) {
+  if (!(await requireUniversAdmin(request, env))) return adminJson({ error: 'Non autorisé.' }, 401, request);
+
+  const url = new URL(request.url);
+  let id = cleanId(url.searchParams.get('id'));
+  let body = {};
+  if (request.method === 'POST') {
+    body = await request.json().catch(() => ({}));
+    id = cleanId(body.id || id);
+  }
+  if (!id) return adminJson({ error: 'Identifiant produit requis.' }, 400, request);
+
+  const key = PRODUCT_PREFIX + id;
+  const raw = await env.CASHFLOW_KV.get(key);
+  if (!raw) return adminJson({ error: 'Produit introuvable.' }, 404, request);
+
+  let product;
+  try { product = JSON.parse(raw); } catch (_) { return adminJson({ error: 'Produit illisible.' }, 500, request); }
+
+  if (request.method === 'GET') {
+    return adminJson({ success: true, id, media: mediaFields(product) }, 200, request);
+  }
+
+  const videoRaw = cleanText(body.videoUrl, 2000);
+  const testimonialImageRaw = cleanText(body.testimonialImageUrl, 2000);
+  const videoUrl = cleanMediaUrl(videoRaw);
+  const testimonialImageUrl = cleanMediaUrl(testimonialImageRaw);
+  if (videoRaw && !videoUrl) return adminJson({ error: 'Le lien de la vidéo doit être une adresse https:// valide.' }, 400, request);
+  if (testimonialImageRaw && !testimonialImageUrl) return adminJson({ error: 'Le lien de l’image du témoignage doit être une adresse https:// valide.' }, 400, request);
+
+  product.schemaVersion = Math.max(2, Number(product.schemaVersion) || 1);
+  product.videoUrl = videoUrl;
+  product.videoTitle = cleanText(body.videoTitle, 180);
+  product.videoPosition = ['gallery', 'description', 'hidden'].includes(body.videoPosition) ? body.videoPosition : 'gallery';
+  product.testimonialImageUrl = testimonialImageUrl;
+  product.testimonialMode = ['text', 'image', 'both'].includes(body.testimonialMode) ? body.testimonialMode : 'text';
+  product.updatedAt = new Date().toISOString();
+
+  await env.CASHFLOW_KV.put(key, JSON.stringify(product));
+  return adminJson({ success: true, id, media: mediaFields(product) }, 200, request);
 }
 
 async function productIds(env) {
@@ -121,6 +219,12 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    if (path === '/api/admin/product-media') {
+      if (request.method === 'OPTIONS') return withAdminHeaders(new Response(null, { status: 204 }), request);
+      if (request.method === 'GET' || request.method === 'POST') return adminProductMedia(request, env);
+      return adminJson({ error: 'Méthode refusée.' }, 405, request);
+    }
 
     if (request.method === 'OPTIONS' && path.startsWith('/api/')) {
       return withPublicHeaders(new Response(null, { status: 204 }));
