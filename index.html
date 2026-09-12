@@ -7,6 +7,274 @@
   <title>Boutique NyXia</title>
   <link rel="icon" type="image/png" href="/images/FavIcon.png">
   <link rel="stylesheet" href="/css/boutique.css">
+
+  <style>
+    /* =========================================================
+       PASSERELLE STUDIO PROMPT
+       Images originales utilisées telles quelles.
+       ========================================================= */
+    .studio-prompt-zone{
+      position:relative;
+      z-index:2;
+      width:100%;
+      padding:24px 0 0;
+    }
+
+    .studio-people-banner,
+    .studio-team-banner{
+      width:min(1320px,calc(100% - 28px));
+      margin:0 auto;
+    }
+
+    .studio-people-banner img,
+    .studio-team-banner img{
+      display:block;
+      width:100%;
+      height:auto;
+      border-radius:24px;
+      border:1px solid rgba(167,139,250,.18);
+      box-shadow:
+        0 24px 70px rgba(0,0,0,.32),
+        0 0 34px rgba(123,92,255,.10);
+    }
+
+    /* Séparation douce entre les portes et Studio Prompt */
+    .studio-people-banner{
+      position:relative;
+      margin-top:14px;
+      margin-bottom:34px;
+    }
+
+    .studio-people-banner:before{
+      content:"";
+      position:absolute;
+      z-index:-1;
+      left:8%;
+      right:8%;
+      top:12%;
+      bottom:12%;
+      border-radius:50%;
+      background:radial-gradient(
+        ellipse,
+        rgba(123,92,255,.23),
+        rgba(167,139,250,.08) 45%,
+        transparent 72%
+      );
+      filter:blur(28px);
+      pointer-events:none;
+    }
+
+    .studio-prompt-invite{
+      position:relative;
+      display:grid;
+      grid-template-columns:minmax(210px,.72fr) minmax(0,1.28fr);
+      align-items:center;
+      gap:42px;
+      width:min(1000px,calc(100% - 36px));
+      margin:0 auto 42px;
+      padding:28px 34px;
+      border:1px solid rgba(167,139,250,.15);
+      border-radius:24px;
+      background:
+        linear-gradient(145deg,rgba(18,25,58,.42),rgba(7,11,28,.26));
+      box-shadow:
+        0 18px 54px rgba(0,0,0,.22),
+        inset 0 1px 0 rgba(255,255,255,.045);
+      backdrop-filter:blur(14px);
+    }
+
+    .studio-prompt-invite:before{
+      content:"";
+      position:absolute;
+      left:2%;
+      bottom:-16px;
+      width:42%;
+      height:62px;
+      background:radial-gradient(
+        ellipse,
+        rgba(123,92,255,.34),
+        rgba(167,139,250,.10) 42%,
+        transparent 72%
+      );
+      filter:blur(12px);
+      pointer-events:none;
+    }
+
+    .studio-logo-float{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:190px;
+    }
+
+    .studio-logo-float:after{
+      content:"";
+      position:absolute;
+      left:50%;
+      bottom:14px;
+      width:72%;
+      height:26px;
+      transform:translateX(-50%);
+      border-radius:50%;
+      background:radial-gradient(
+        ellipse,
+        rgba(243,204,122,.34),
+        rgba(123,92,255,.30) 30%,
+        transparent 72%
+      );
+      filter:blur(9px);
+      animation:studioGroundGlow 4.6s ease-in-out infinite;
+    }
+
+    .studio-logo-float img{
+      position:relative;
+      z-index:2;
+      display:block;
+      width:min(100%,250px);
+      height:auto;
+      filter:
+        drop-shadow(0 18px 22px rgba(0,0,0,.30))
+        drop-shadow(0 0 20px rgba(123,92,255,.26))
+        drop-shadow(0 0 14px rgba(243,204,122,.12));
+      animation:studioLogoFloat 4.8s ease-in-out infinite;
+    }
+
+    .studio-curiosity{
+      position:relative;
+      z-index:2;
+      max-width:560px;
+    }
+
+    .studio-curiosity .studio-small{
+      margin:0 0 7px;
+      color:#f3cc7a;
+      font-size:.68rem;
+      font-weight:800;
+      letter-spacing:.13em;
+      text-transform:uppercase;
+    }
+
+    .studio-curiosity h2{
+      margin:0 0 12px;
+      font-family:Georgia,"Times New Roman",serif;
+      font-size:clamp(1.55rem,2.8vw,2.25rem);
+      line-height:1.08;
+      letter-spacing:-.02em;
+      color:#fff;
+    }
+
+    .studio-curiosity p{
+      margin:0;
+      max-width:520px;
+      color:#bcb6d7;
+      font-size:1rem;
+      line-height:1.58;
+    }
+
+    .studio-curiosity strong{
+      color:#fff;
+      font-weight:750;
+    }
+
+    .studio-prompt-link{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      margin-top:17px;
+      color:#d8cbff;
+      text-decoration:none;
+      font-size:.9rem;
+      font-weight:800;
+      transition:transform .2s ease,color .2s ease,text-shadow .2s ease;
+    }
+
+    .studio-prompt-link:hover{
+      color:#fff;
+      transform:translateX(3px);
+      text-shadow:0 0 18px rgba(167,139,250,.42);
+    }
+
+    /* Image finale seule : aucune copie marketing ajoutée */
+    .studio-team-banner{
+      margin-top:6px;
+      margin-bottom:28px;
+    }
+
+    @keyframes studioLogoFloat{
+      0%,100%{transform:translateY(0)}
+      50%{transform:translateY(-9px)}
+    }
+
+    @keyframes studioGroundGlow{
+      0%,100%{opacity:.55;transform:translateX(-50%) scaleX(.88)}
+      50%{opacity:1;transform:translateX(-50%) scaleX(1.06)}
+    }
+
+    @media(max-width:760px){
+      .studio-prompt-zone{
+        padding-top:14px;
+      }
+
+      .studio-people-banner,
+      .studio-team-banner{
+        width:min(100% - 20px,1320px);
+      }
+
+      .studio-people-banner img,
+      .studio-team-banner img{
+        border-radius:16px;
+      }
+
+      .studio-people-banner{
+        margin-bottom:24px;
+      }
+
+      .studio-prompt-invite{
+        grid-template-columns:1fr;
+        gap:8px;
+        width:min(100% - 24px,620px);
+        padding:22px 20px 26px;
+        text-align:center;
+      }
+
+      .studio-logo-float{
+        min-height:150px;
+      }
+
+      .studio-logo-float img{
+        width:min(72%,220px);
+      }
+
+      .studio-curiosity{
+        margin-inline:auto;
+      }
+
+      .studio-curiosity h2{
+        font-size:clamp(1.45rem,6vw,1.9rem);
+      }
+
+      .studio-curiosity p{
+        font-size:.95rem;
+      }
+
+      .studio-prompt-link{
+        justify-content:center;
+      }
+
+      .studio-team-banner{
+        margin-bottom:18px;
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce){
+      .studio-logo-float img,
+      .studio-logo-float:after{
+        animation:none!important;
+      }
+    }
+  </style>
+
 </head>
 <body data-page="home">
   <canvas id="starry-canvas" aria-hidden="true"></canvas>
@@ -42,7 +310,7 @@
         <img class="menu-nyxia" src="/images/NyXia.png" alt="NyXia">
         <span>
           <strong>Boutique NyXia</strong>
-          <small>Le Grand Hall</small>
+          <small>Univers NyXia</small>
         </span>
       </a>
       <button class="menu-close" id="menu-close" type="button" aria-label="Fermer le menu">×</button>
@@ -70,7 +338,7 @@
   <main>
     <section class="hero shell">
       <div class="hero-copy">
-        <p class="eyebrow">✦ Le Grand Hall de l’écosystème</p>
+        <p class="eyebrow">✦ Bienvenue dans l’univers NyXia</p>
         <h1 id="hero-title">Sept portes. Sept univers. Une seule boutique vivante.</h1>
         <p class="lead" id="hero-text">Choisis l’univers qui t’appelle et découvre ses livres, formations, outils, services, activités et événements.</p>
         <a class="glass-button" href="#portes">Choisir une porte</a>
@@ -105,6 +373,43 @@
       </div>
       <div class="products-grid" id="featured-grid"></div>
     </section>
+
+    <section class="studio-prompt-zone" aria-label="Découvrir Studio Prompt">
+      <div class="studio-people-banner">
+        <img
+          src="/images/studio-prompt-02-personnages.png"
+          alt="Studio Prompt et l’équipe de l’univers NyXia"
+          loading="lazy">
+      </div>
+
+      <div class="studio-prompt-invite">
+        <div class="studio-logo-float" aria-hidden="true">
+          <img
+            src="/images/sudioprompt.png"
+            alt="">
+        </div>
+
+        <div class="studio-curiosity">
+          <p class="studio-small">Une idée peut aller beaucoup plus loin</p>
+          <h2>Et si ton idée n’avait jamais été le problème&nbsp;?</h2>
+          <p>
+            Peut-être qu’il te manque simplement
+            <strong>le bon prochain pas.</strong>
+          </p>
+          <a class="studio-prompt-link" href="/produit.html?id=studio-prompt">
+            Entrer dans Studio Prompt →
+          </a>
+        </div>
+      </div>
+
+      <div class="studio-team-banner">
+        <img
+          src="/images/cercle-succes-02-equipe.png"
+          alt="Une équipe réunie autour de projets communs"
+          loading="lazy">
+      </div>
+    </section>
+
   </main>
 
   <footer>© 2026 <span>NyXia — Boutique</span> · Créé par Diane Boyer · Les résultats dépendent de l’utilisation, du contexte et des actions de chaque personne.</footer>
