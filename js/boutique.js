@@ -43,6 +43,66 @@
     });
   }
 
+  var REF_STORAGE_KEY='nyxia_ref';
+
+  function normalizeRef(value){
+    return String(value||'').trim().toUpperCase().replace(/[^A-Z0-9_-]/g,'').slice(0,120);
+  }
+
+  function storeRef(ref){
+    ref=normalizeRef(ref);
+    if(!ref)return'';
+    try{localStorage.setItem(REF_STORAGE_KEY,ref);}catch(_){}
+    try{
+      var maxAge=60*60*24*90;
+      document.cookie='nyxia_ref='+encodeURIComponent(ref)+'; Path=/; Max-Age='+maxAge+'; SameSite=Lax; Secure; Domain=.nyxia.top';
+    }catch(_){}
+    return ref;
+  }
+
+  function cookieRef(){
+    try{
+      var match=document.cookie.match(/(?:^|;\s*)nyxia_ref=([^;]+)/);
+      return match?normalizeRef(decodeURIComponent(match[1])):'';
+    }catch(_){return'';}
+  }
+
+  function currentRef(){
+    var params=new URLSearchParams(location.search);
+    var incoming=normalizeRef(params.get('ref')||params.get('code')||'');
+    if(incoming)return storeRef(incoming);
+    try{
+      var saved=normalizeRef(localStorage.getItem(REF_STORAGE_KEY)||'');
+      if(saved)return saved;
+    }catch(_){}
+    return cookieRef();
+  }
+
+  function checkoutUrl(raw,productId){
+    var url=String(raw||'').trim();
+    if(!url)return'';
+    try{
+      var parsed=new URL(url,location.origin);
+      var ref=currentRef();
+      if(ref)parsed.searchParams.set('ref',ref);
+      if(productId)parsed.searchParams.set('nyxia_product',String(productId));
+      return parsed.toString();
+    }catch(_){return url;}
+  }
+
+  function recordRefClick(productId){
+    var ref=currentRef();
+    if(!ref||!productId)return;
+    try{
+      fetch('/api/ref-click',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ref:ref,productId:String(productId)}),
+        keepalive:true
+      }).catch(function(){});
+    }catch(_){}
+  }
+
   function productUrl(product){
     return '/produit.html?id='+encodeURIComponent(product.id);
   }
@@ -316,12 +376,18 @@
       }).join('')+'</div>';
     }
 
-    var ctaUrl=product.ctaUrl||((product.ctaType==='rendez-vous'||product.ctaType==='appel')?settings.appointmentUrl:'');
-    var ctaLabel=(product.ctaType==='rendez-vous'&&settings.appointmentLabel)
-      ?settings.appointmentLabel
-      :(CTA_LABELS[product.ctaType]||'En savoir plus');
+    var isSystemeCheckout=!!String(product.systemeCheckoutUrl||'').trim();
+    var ctaRaw=isSystemeCheckout
+      ?product.systemeCheckoutUrl
+      :(product.ctaUrl||((product.ctaType==='rendez-vous'||product.ctaType==='appel')?settings.appointmentUrl:''));
+    var ctaUrl=isSystemeCheckout?checkoutUrl(ctaRaw,product.id):ctaRaw;
+    var ctaLabel=isSystemeCheckout
+      ?(CTA_LABELS.acheter||'Acheter')
+      :((product.ctaType==='rendez-vous'&&settings.appointmentLabel)
+        ?settings.appointmentLabel
+        :(CTA_LABELS[product.ctaType]||'En savoir plus'));
 
-    var cta=ctaUrl?'<a class="product-cta" href="'+esc(ctaUrl)+'" target="_blank" rel="noopener">'+esc(ctaLabel)+'</a>':'';
+    var cta=ctaUrl?'<a class="product-cta" href="'+esc(ctaUrl)+'" target="_blank" rel="noopener"'+(isSystemeCheckout?' data-nyxia-checkout="'+esc(product.id)+'"':'')+'>'+esc(ctaLabel)+'</a>':'';
     var promo=product.promoActive?'<div class="promo-box"><strong>'+esc(product.promoText||'Promotion en cours')+'</strong><br><span class="promo-code">'+esc(product.promoCode)+'</span></div>':'';
     var testimonial=testimonialMarkup(product);
     var descriptionVideo=(videoPosition==='description'&&videoInfo(product.videoUrl))
@@ -365,6 +431,9 @@
     }
 
     bindTestimonialLightbox();
+    document.querySelectorAll('[data-nyxia-checkout]').forEach(function(link){
+      link.addEventListener('click',function(){recordRefClick(link.getAttribute('data-nyxia-checkout'));});
+    });
   }
 
 
@@ -445,6 +514,7 @@
     initBurgerMenu();
   }
 
+  currentRef();
   var page=document.body.getAttribute('data-page');
 
   if(page==='home'){
