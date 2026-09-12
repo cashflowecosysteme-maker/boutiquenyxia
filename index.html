@@ -13,11 +13,60 @@
 
   <header class="site-header">
     <a class="brand" href="/" aria-label="Accueil Boutique NyXia">
-      <span class="brand-orb"><img src="/images/FavIcon.png" alt=""></span>
+      <img class="brand-nyxia" src="/images/NyXia.png" alt="NyXia">
       <span id="brand-title">Boutique NyXia</span>
     </a>
-    <a class="header-link" href="#portes">Explorer les univers</a>
+
+    <div class="header-actions">
+      <a class="header-link" href="#portes">Explorer les univers</a>
+
+      <button
+        class="burger-button"
+        id="burger-button"
+        type="button"
+        aria-label="Ouvrir le menu"
+        aria-controls="nyxia-menu"
+        aria-expanded="false">
+        <span class="burger-label">Menu</span>
+        <span class="burger-lines" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+      </button>
+    </div>
   </header>
+
+  <div class="menu-backdrop" id="menu-backdrop" hidden></div>
+
+  <aside class="nyxia-menu" id="nyxia-menu" aria-hidden="true" aria-label="Navigation principale">
+    <div class="menu-head">
+      <a class="menu-brand" href="/">
+        <img class="menu-nyxia" src="/images/NyXia.png" alt="NyXia">
+        <span>
+          <strong>Boutique NyXia</strong>
+          <small>Le Grand Hall</small>
+        </span>
+      </a>
+      <button class="menu-close" id="menu-close" type="button" aria-label="Fermer le menu">×</button>
+    </div>
+
+    <nav class="menu-nav">
+      <a class="menu-home" href="/">✦ Accueil de la Boutique</a>
+
+      <p class="menu-section-title">Les sept univers</p>
+
+      <a href="/univers.html?portail=nyxia"><span>N</span><strong>NyXia</strong><small>Solutions & Done For You</small></a>
+      <a href="/univers.html?portail=diane"><span>D</span><strong>Diane</strong><small>Parcours, livres & créations</small></a>
+      <a href="/univers.html?portail=eric"><span>É</span><strong>Éric</strong><small>CashFlow™ & marketing</small></a>
+      <a href="/univers.html?portail=lena"><span>L</span><strong>Léna</strong><small>Dons & méthode DDM</small></a>
+      <a href="/univers.html?portail=selena"><span>S</span><strong>Séléna</strong><small>A.M.I.E.™ & miroir</small></a>
+      <a href="/univers.html?portail=kael"><span>K</span><strong>Kael</strong><small>Relations & expériences</small></a>
+      <a href="/univers.html?portail=alex"><span>A</span><strong>Alex</strong><small>Écriture & romans</small></a>
+
+      <a class="menu-secondary" href="/#vedettes">★ Sélection du moment</a>
+    </nav>
+
+    <div class="menu-footer">Sept portes · Un seul écosystème</div>
+  </aside>
 
   <main>
     <section class="hero shell">
