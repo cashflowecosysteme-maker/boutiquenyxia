@@ -10,5 +10,10 @@ binding = "ASSETS"
 binding = "CASHFLOW_KV"
 id = "106db6da016d49d2b480452f19bad695"
 
+[[d1_databases]]
+binding = "DB"
+database_name = "nyxia-cercles-db"
+database_id = "a21fd813-06fa-41f1-b744-07bf1c5c7951"
+
 [vars]
 SITE_URL = "https://boutique.nyxia.top"
