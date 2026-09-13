@@ -345,29 +345,57 @@
       +(product.videoTitle?'<div class="product-video-title">'+esc(product.videoTitle)+'</div>':'');
   }
 
+  function normalizedTestimonials(product){
+    var list=Array.isArray(product.testimonials)?product.testimonials:[];
+    list=list.map(function(item){
+      var type=item&&item.type==='image'?'image':'text';
+      return{
+        type:type,
+        text:String(item&&item.text||'').trim(),
+        author:String(item&&item.author||'').trim(),
+        imageUrl:String(item&&item.imageUrl||'').trim(),
+        caption:String(item&&item.caption||'').trim()
+      };
+    }).filter(function(item){return item.type==='image'?!!item.imageUrl:!!item.text;});
+
+    /* Compatibilité avec les anciens produits à un seul témoignage. */
+    if(!list.length){
+      var quote=String(product.testimonialQuote||'').trim();
+      var author=String(product.testimonialAuthor||'').trim();
+      var image=String(product.testimonialImageUrl||'').trim();
+      var mode=String(product.testimonialMode||'').trim();
+      if(quote&&(mode!=='image'))list.push({type:'text',text:quote,author:author,imageUrl:'',caption:''});
+      if(image&&(mode!=='text'))list.push({type:'image',text:'',author:'',imageUrl:image,caption:author});
+    }
+    return list;
+  }
+
   function testimonialMarkup(product){
-    var quote=String(product.testimonialQuote||'').trim();
-    var author=String(product.testimonialAuthor||'').trim();
-    var image=String(product.testimonialImageUrl||'').trim();
-    var mode=String(product.testimonialMode||'').trim();
-    if(['text','image','both'].indexOf(mode)<0){
-      mode=image&&quote?'both':(image?'image':'text');
-    }
+    var list=normalizedTestimonials(product);
+    if(!list.length)return'';
 
-    var showText=(mode==='text'||mode==='both')&&quote;
-    var showImage=(mode==='image'||mode==='both')&&image;
-    if(!showText&&!showImage)return'';
+    var title=String(product.testimonialTitle||'Témoignages').trim()||'Témoignages';
+    var cards=list.map(function(item,index){
+      if(item.type==='image'){
+        var caption=item.caption||'';
+        return '<div class="testimonial has-image" style="margin-top:0">'
+          +'<button class="testimonial-image-button" type="button" data-testimonial-image="'+esc(item.imageUrl)+'" aria-label="Agrandir le témoignage '+(index+1)+'">'
+          +'<img src="'+esc(item.imageUrl)+'" alt="Témoignage'+(caption?' — '+esc(caption):'')+'" loading="lazy">'
+          +'<span>Agrandir</span></button>'
+          +(caption?'<cite style="margin-top:10px">'+esc(caption)+'</cite>':'')
+          +'</div>';
+      }
+      return '<div class="testimonial" style="margin-top:0">'
+        +'<blockquote>« '+esc(item.text)+' »</blockquote>'
+        +(item.author?'<cite>— '+esc(item.author)+'</cite>':'')
+        +'</div>';
+    }).join('');
 
-    var html='<div class="testimonial'+(showImage?' has-image':'')+'">';
-    if(showText){
-      html+='<blockquote>« '+esc(quote)+' »</blockquote>'+(author?'<cite>— '+esc(author)+'</cite>':'');
-    }
-    if(showImage){
-      html+='<button class="testimonial-image-button" type="button" data-testimonial-image="'+esc(image)+'" aria-label="Agrandir le témoignage">'
-        +'<img src="'+esc(image)+'" alt="Témoignage'+(author?' — '+esc(author):'')+'" loading="lazy">'
-        +'<span>Agrandir</span></button>';
-    }
-    return html+'</div>';
+    return '<section class="testimonials-section" style="margin-top:34px">'
+      +'<p class="eyebrow" style="margin-bottom:8px">Preuve sociale</p>'
+      +'<h2 style="margin-bottom:18px">'+esc(title)+'</h2>'
+      +'<div class="testimonials-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px">'+cards+'</div>'
+      +'</section>';
   }
 
   function ensureTestimonialLightbox(){
