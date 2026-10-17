@@ -192,8 +192,21 @@
   }
 
   function presentationProduct(product){
-    if(videoInfo(product.imageMain))return Object.assign({},product,{imageMain:'',videoUrl:product.videoUrl||product.imageMain,videoFirst:true});
-    return product;
+    if(product._galleryMedia)return product;
+    var entries=[],videos=[],seen={};
+    function add(url){if(!url||seen[url])return;seen[url]=true;var video=videoInfo(url);entries.push({kind:video?'video':'image',url:url});if(video)videos.push(url);}
+    [product.imageMain].concat(product.images||[]).filter(Boolean).slice(0,5).forEach(add);
+    if(videoInfo(product.videoUrl))add(product.videoUrl);
+    var mainVideo=!!videoInfo(product.imageMain);
+    var position=product.videoPosition||'gallery';
+    return Object.assign({},product,{
+      imageMain:mainVideo?'':product.imageMain,
+      images:(product.images||[]).filter(function(url){return !videoInfo(url)}),
+      videoUrl:videoInfo(product.videoUrl)?product.videoUrl:(videos[0]||''),
+      videoFirst:mainVideo||product.videoFirst===true,
+      _videoUrls:videos,
+      _galleryMedia:entries.filter(function(entry){return entry.kind==='image'||position==='gallery'})
+    });
   }
   function productCard(product,settings){
     product=presentationProduct(product);
@@ -414,24 +427,24 @@ function videoInfo(value){
     var images=[product.imageMain].concat(product.images||[]).filter(Boolean).slice(0,5);
     var secondary=(product.images||[]).filter(Boolean).slice(0,4);
     var videoPosition=['gallery','description','hidden'].indexOf(product.videoPosition)>=0?product.videoPosition:'gallery';
-    var hasGalleryVideo=!!videoInfo(product.videoUrl)&&videoPosition==='gallery';
-    var initialVideo=hasGalleryVideo&&(product.videoFirst===true||!images.length);
+    var galleryMedia=product._galleryMedia||[];
+    var hasGalleryVideo=galleryMedia.some(function(entry){return entry.kind==='video'});
+    var initialEntry=(product.videoFirst?galleryMedia.find(function(entry){return entry.kind==='video'}):null)||galleryMedia[0];
+    var initialVideo=!!initialEntry&&initialEntry.kind==='video';
 
     var mainMedia=initialVideo
-      ?videoMarkup(product,'gallery')
+      ?videoMarkup(Object.assign({},product,{videoUrl:initialEntry.url}),'gallery')
       :(images.length
         ?'<img id="gallery-main" src="'+esc(images[0])+'" alt="'+esc(product.title)+'">'
         :'<span class="media-placeholder" aria-hidden="true">'+esc(portal.symbol||portal.name.charAt(0))+'</span>');
 
     var thumbs='';
     if(hasGalleryVideo){
-      var galleryImages=images.slice(0,5);
-      thumbs='<div class="thumbs product-media-thumbs">'
-        +galleryImages.map(function(url,index){
-          return '<button class="thumb media-thumb'+(!initialVideo&&index===0?' active':'')+'" type="button" data-media-image="'+esc(url)+'" aria-label="Voir l’image '+(index+1)+'"><img src="'+esc(url)+'" alt=""></button>';
-        }).join('')
-        +'<button class="thumb media-thumb video-thumb'+(initialVideo?' active':'')+'" type="button" data-media-video="1" aria-label="Voir la vidéo"><span class="video-thumb-icon">▶</span><small>Vidéo</small></button>'
-        +'</div>';
+      thumbs='<div class="thumbs product-media-thumbs">'+galleryMedia.map(function(entry,index){
+        var active=entry===initialEntry?' active':'';
+        if(entry.kind==='video')return '<button class="thumb media-thumb video-thumb'+active+'" type="button" data-media-video="'+esc(entry.url)+'" aria-label="Voir la vidéo '+(index+1)+'"><span class="video-thumb-icon">▶</span><small>Vidéo</small></button>';
+        return '<button class="thumb media-thumb'+active+'" type="button" data-media-image="'+esc(entry.url)+'" aria-label="Voir l’image '+(index+1)+'"><img src="'+esc(entry.url)+'" alt=""></button>';
+      }).join('')+'</div>';
     }else if(secondary.length){
       thumbs='<div class="thumbs">'+secondary.map(function(url,index){
         return '<button class="thumb" type="button" data-image="'+esc(url)+'" aria-label="Voir l’image secondaire '+(index+1)+'"><img src="'+esc(url)+'" alt=""></button>';
@@ -452,9 +465,7 @@ function videoInfo(value){
     var cta=ctaUrl?'<a class="product-cta" href="'+esc(ctaUrl)+'" target="_blank" rel="noopener"'+(isSystemeCheckout?' data-nyxia-checkout="'+esc(product.id)+'"':'')+'>'+esc(ctaLabel)+'</a>':'';
     var promo=product.promoActive?'<div class="promo-box"><strong>'+esc(product.promoText||'Promotion en cours')+'</strong><br><span class="promo-code">'+esc(product.promoCode)+'</span></div>':'';
     var testimonial=testimonialMarkup(product);
-    var descriptionVideo=(videoPosition==='description'&&videoInfo(product.videoUrl))
-      ?'<div class="product-video-block">'+videoMarkup(product,'description')+'</div>'
-      :'';
+    var descriptionVideo=videoPosition==='description'?(product._videoUrls||[]).map(function(url){return '<div class="product-video-block">'+videoMarkup(Object.assign({},product,{videoUrl:url}),'description')+'</div>'}).join(''):'';
 
     var productPriceText=currency(product);
     var productOldPrice=oldPrice(product);
@@ -478,15 +489,14 @@ function videoInfo(value){
           button.classList.add('active');
         });
       });
-      var videoButton=document.querySelector('[data-media-video]');
-      if(videoButton){
+      document.querySelectorAll('[data-media-video]').forEach(function(videoButton){
         videoButton.addEventListener('click',function(){
           mediaBox.classList.add('video-active');
-          mediaBox.innerHTML=videoMarkup(product,'gallery');
+          mediaBox.innerHTML=videoMarkup(Object.assign({},product,{videoUrl:videoButton.getAttribute('data-media-video')}),'gallery');
           document.querySelectorAll('.media-thumb').forEach(function(item){item.classList.remove('active');});
           videoButton.classList.add('active');
         });
-      }
+      });
     }else{
       document.querySelectorAll('.thumb').forEach(function(button){
         button.addEventListener('click',function(){
@@ -604,4 +614,5 @@ function videoInfo(value){
       .catch(function(error){document.querySelector('main').innerHTML='<div class="error-state">'+esc(error.message)+' <a href="/">Revenir à la Boutique</a></div>';});
   }
 })();
+
 
