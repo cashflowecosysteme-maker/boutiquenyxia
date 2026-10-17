@@ -191,17 +191,23 @@
     return '<span class="media-placeholder" aria-hidden="true">'+esc(portal.symbol||portal.name.charAt(0))+'</span>';
   }
 
+  function productMediaUrl(value){
+    if(typeof value!=='string')return'';
+    var url=value.trim();
+    if(!url||(!/^https?:\/\//i.test(url)&&url.charAt(0)!=='/'))return'';
+    try{var parsed=new URL(url,location.origin);return parsed.protocol==='http:'||parsed.protocol==='https:'?url:''}catch(_){return''}
+  }
   function presentationProduct(product){
     if(product._galleryMedia)return product;
     var entries=[],videos=[],seen={};
-    function add(url){if(!url||seen[url])return;seen[url]=true;var video=videoInfo(url);entries.push({kind:video?'video':'image',url:url});if(video)videos.push(url);}
-    [product.imageMain].concat(product.images||[]).filter(Boolean).slice(0,5).forEach(add);
+    function add(url){url=productMediaUrl(url);if(!url||seen[url])return;seen[url]=true;var video=videoInfo(url);entries.push({kind:video?'video':'image',url:url});if(video)videos.push(url);}
+    [product.imageMain].concat(Array.isArray(product.images)?product.images:[]).slice(0,5).forEach(add);
     if(videoInfo(product.videoUrl))add(product.videoUrl);
-    var mainVideo=!!videoInfo(product.imageMain);
+    var mainUrl=productMediaUrl(product.imageMain),mainVideo=!!videoInfo(mainUrl);
     var position=product.videoPosition||'gallery';
     return Object.assign({},product,{
-      imageMain:mainVideo?'':product.imageMain,
-      images:(product.images||[]).filter(function(url){return !videoInfo(url)}),
+      imageMain:mainVideo?'':mainUrl,
+      images:(Array.isArray(product.images)?product.images:[]).map(productMediaUrl).filter(function(url){return url&&!videoInfo(url)}),
       videoUrl:videoInfo(product.videoUrl)?product.videoUrl:(videos[0]||''),
       videoFirst:mainVideo||product.videoFirst===true,
       _videoUrls:videos,
@@ -484,7 +490,7 @@ function videoInfo(value){
       document.querySelectorAll('[data-media-image]').forEach(function(button){
         button.addEventListener('click',function(){
           mediaBox.classList.remove('video-active');
-          mediaBox.innerHTML='<img id="gallery-main" src="'+esc(button.getAttribute('data-media-image'))+'" alt="'+esc(product.title)+'">';
+          mediaBox.innerHTML='<img id="gallery-main" src="'+esc(button.getAttribute('data-media-image'))+'" alt="'+esc(product.title)+'">';watchMainImage();
           document.querySelectorAll('.media-thumb').forEach(function(item){item.classList.remove('active');});
           button.classList.add('active');
         });
@@ -501,12 +507,42 @@ function videoInfo(value){
       document.querySelectorAll('.thumb').forEach(function(button){
         button.addEventListener('click',function(){
           var image=document.getElementById('gallery-main');
-          if(image)image.src=button.getAttribute('data-image');
+          if(image){image.src=button.getAttribute('data-image');watchMainImage();}
           document.querySelectorAll('.thumb').forEach(function(item){item.classList.remove('active');});
           button.classList.add('active');
         });
       });
     }
+
+    // Un champ vide ne crée aucun média. Une image indisponible ne laisse pas d'icône cassée.
+    var failedImages={};
+    function watchMainImage(){
+      var image=document.getElementById('gallery-main');
+      if(image)image.onerror=function(){omitFailedImage(image.getAttribute('src'))};
+    }
+    function omitFailedImage(url){
+      failedImages[url]=true;
+      document.querySelectorAll('[data-media-image],[data-image]').forEach(function(button){
+        if((button.getAttribute('data-media-image')||button.getAttribute('data-image'))===url)button.style.display='none';
+      });
+      var current=document.getElementById('gallery-main');
+      if(!current||current.getAttribute('src')!==url)return;
+      var next=galleryMedia.find(function(entry){return entry.kind==='video'||!failedImages[entry.url]});
+      var box=document.getElementById('product-main-media');
+      if(next&&box){
+        if(next.kind==='video'){
+          box.classList.add('video-active');box.innerHTML=videoMarkup(Object.assign({},product,{videoUrl:next.url}),'gallery');
+        }else{
+          box.classList.remove('video-active');box.innerHTML='<img id="gallery-main" src="'+esc(next.url)+'" alt="'+esc(product.title)+'">';watchMainImage();
+        }
+      }else{
+        var gallery=main.querySelector('.product-gallery'),copy=main.querySelector('.product-copy');
+        if(gallery)gallery.style.display='none';if(copy)copy.style.gridColumn='1 / -1';
+      }
+    }
+    document.querySelectorAll('.thumb img').forEach(function(image){image.onerror=function(){var button=image.closest('button');if(button)button.style.display='none';omitFailedImage(image.getAttribute('src'))}});
+    if(!galleryMedia.length){var gallery=main.querySelector('.product-gallery'),copy=main.querySelector('.product-copy');if(gallery)gallery.style.display='none';if(copy)copy.style.gridColumn='1 / -1';}
+    watchMainImage();
 
     bindTestimonialLightbox();
     document.querySelectorAll('[data-nyxia-checkout]').forEach(function(link){
