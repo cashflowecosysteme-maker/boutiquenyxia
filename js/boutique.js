@@ -187,10 +187,16 @@
 
   function cardMedia(product,portal){
     if(product.imageMain)return '<img src="'+esc(product.imageMain)+'" alt="'+esc(product.title)+'" loading="lazy">';
+    if(product.videoPosition!=='hidden'&&videoInfo(product.videoUrl))return '<span class="media-placeholder" aria-label="Vidéo de présentation">▶ Vidéo de présentation</span>';
     return '<span class="media-placeholder" aria-hidden="true">'+esc(portal.symbol||portal.name.charAt(0))+'</span>';
   }
 
+  function presentationProduct(product){
+    if(videoInfo(product.imageMain))return Object.assign({},product,{imageMain:'',videoUrl:product.videoUrl||product.imageMain,videoFirst:true});
+    return product;
+  }
   function productCard(product,settings){
+    product=presentationProduct(product);
     var portal=portalFrom(settings,product.portal);
     var description=String(product.shortDescription||product.description||'').slice(0,150);
     var priceText=currency(product);
@@ -305,37 +311,25 @@
     return match?match[1]:'';
   }
 
-  function videoInfo(url){
-    var raw=String(url||'').trim();
-    if(!raw)return null;
-    try{
-      var parsed=new URL(raw,location.origin);
-      var host=parsed.hostname.toLowerCase().replace(/^www\./,'');
-      var id='';
-
-      if(host==='youtube.com'||host==='m.youtube.com'||host==='youtube-nocookie.com'){
-        if(parsed.pathname==='/watch')id=parsed.searchParams.get('v')||'';
-        else{
-          var ym=parsed.pathname.match(/^\/(?:embed|shorts|live)\/([A-Za-z0-9_-]{6,})/);
-          if(ym)id=ym[1];
-        }
-        if(id)return{kind:'iframe',src:'https://www.youtube-nocookie.com/embed/'+encodeURIComponent(id)+'?rel=0',provider:'YouTube'};
-      }
-
-      if(host==='youtu.be'){
-        id=parsed.pathname.replace(/^\//,'').split('/')[0];
-        if(id)return{kind:'iframe',src:'https://www.youtube-nocookie.com/embed/'+encodeURIComponent(id)+'?rel=0',provider:'YouTube'};
-      }
-
-      if(host==='vimeo.com'||host==='player.vimeo.com'){
-        var vm=parsed.pathname.match(/(?:\/video)?\/(\d+)/);
-        if(vm&&vm[1])return{kind:'iframe',src:'https://player.vimeo.com/video/'+vm[1],provider:'Vimeo'};
-      }
-
-      if(/\.mp4(?:$|[?#])/i.test(parsed.href))return{kind:'video',src:parsed.href,provider:'MP4'};
-    }catch(_){}
-    return null;
+function videoInfo(value){
+ var raw=String(value||'').trim();if(!raw)return null;
+ try{
+  var url=new URL(raw,'https://boutique.nyxia.top');if(url.protocol!=='https:'&&url.protocol!=='http:')return null;
+  var host=url.hostname.toLowerCase().replace(/^www\./,''),id='',match;
+  if(host==='youtu.be')id=url.pathname.split('/')[1]||'';
+  else if(host==='youtube.com'||host==='m.youtube.com'||host==='youtube-nocookie.com'){
+   if(url.pathname==='/watch')id=url.searchParams.get('v')||'';
+   else{match=url.pathname.match(/^\/(?:embed|shorts|live)\/([A-Za-z0-9_-]+)/);if(match)id=match[1];}
   }
+  if(id&&/^[A-Za-z0-9_-]{6,}$/.test(id))return{kind:'iframe',src:'https://www.youtube-nocookie.com/embed/'+encodeURIComponent(id)+'?rel=0',provider:'YouTube'};
+  if(host==='vimeo.com'||host==='player.vimeo.com'){
+   match=url.pathname.match(/(?:\/video)?\/(\d+)(?:\/([A-Za-z0-9]+))?/);
+   if(match){var hash=url.searchParams.get('h')||match[2]||'';return{kind:'iframe',src:'https://player.vimeo.com/video/'+match[1]+(hash?'?h='+encodeURIComponent(hash):''),provider:'Vimeo'};}
+  }
+  if(/\.mp4$/i.test(url.pathname))return{kind:'video',src:url.href,provider:'MP4'};
+ }catch(_){}
+ return null;
+}
 
   function videoMarkup(product,context){
     var info=videoInfo(product.videoUrl);
@@ -410,6 +404,7 @@
   }
 
   function renderProduct(settings,product){
+    product=presentationProduct(product);
     setBrand(settings);
 
     var main=document.querySelector('main');
@@ -420,7 +415,7 @@
     var secondary=(product.images||[]).filter(Boolean).slice(0,4);
     var videoPosition=['gallery','description','hidden'].indexOf(product.videoPosition)>=0?product.videoPosition:'gallery';
     var hasGalleryVideo=!!videoInfo(product.videoUrl)&&videoPosition==='gallery';
-    var initialVideo=!images.length&&hasGalleryVideo;
+    var initialVideo=hasGalleryVideo&&(product.videoFirst===true||!images.length);
 
     var mainMedia=initialVideo
       ?videoMarkup(product,'gallery')
