@@ -444,7 +444,7 @@ function videoInfo(value){
       :(product.ctaUrl||((product.ctaType==='rendez-vous'||product.ctaType==='appel')?settings.appointmentUrl:''));
     var ctaUrl=isSystemeCheckout?checkoutUrl(ctaRaw,product.id):ctaRaw;
     var ctaLabel=isSystemeCheckout
-      ?'Continuer'
+      ?'Acheter'
       :((product.ctaType==='rendez-vous'&&settings.appointmentLabel)
         ?settings.appointmentLabel
         :(CTA_LABELS[product.ctaType]||'En savoir plus'));
@@ -604,3 +604,4 @@ function videoInfo(value){
       .catch(function(error){document.querySelector('main').innerHTML='<div class="error-state">'+esc(error.message)+' <a href="/">Revenir à la Boutique</a></div>';});
   }
 })();
+
